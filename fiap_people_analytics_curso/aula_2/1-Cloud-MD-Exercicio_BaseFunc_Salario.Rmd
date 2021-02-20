@@ -1,0 +1,432 @@
+---
+title: "Regressao"
+author: "AdelaideAlves"
+date: "1 de outubro de 2020"
+output: html_document
+---
+
+
+##  R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+## Objetivo 
+
+  Estimar o salario em funcao de caracteristicas de colaboradores 
+
+  Trata-se de uma **tecnicas supervisionadas de previsao**
+  Para esse caso vamos aplicar as ferramentas: ** Regressao Linear**
+ 
+  temos uma variavel na base chamada salario que eh uma variavel quantitativa, esta eh nossa variavel dependente/target
+  
+  
+### Primeiro Passo  
+  
+   Trazer o arquivo que contem a base que serah analizada para o **ambiente do R**
+   
+   Qual eh a extensao do arquivo que temos para estudo?: .csv .excel .sav etc...
+
+   alterar o caminho - Trabalhando com o RStudio Instalado
+   lembre da barra invertida /.
+
+
+
+#### algumas dicas para leitura conforme a versao do RStudio
+leitura de arquivo .csv no Rstudio.cloud 
+
+nome_aquivo_noR <- read.csv("/cloud/project/nome_do_arquivo.csv", row.names=1, sep=";",comment.char="#" , stringsAsFactors=TRUE, encoding="UTF8")
+
+  Leitura da base csv
+  colocar o caminho onde esta arquivada a base.
+  ALERTA! se copiar o caminho: perceba a barra esteja invertida "/"
+
+
+  esse arquivo salarios eh um arquivo que se pode trabalhar no R
+  **ALERTA! no R tudo eh sensitive**
+
+
+   Exemplo 1: trabalhando no seu computador 
+
+   Abandono <- read.csv("C:/caminho/Arquivo_Salarios_Colaboradores_2020.csv", sep=';',dec=',' , row.names=1)
+
+   Exemplo 2: trabalhando RStudiocloud:
+   Abandono <- read.csv("Arquivo_Salarios_Colaboradores_2020.csv", sep=';',dec=',' , row.names=1)
+
+
+####  leitura de arquivo .csv no RStudio.Cloud
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+salarios <- read.csv("Arquivo_Salarios_Colaboradores_2020.csv", sep=';',dec=',' , row.names=1)
+
+
+```
+
+####  clicar em cima do arquivo para ver o conteudo
+
+####  Verificando o conteudo da base 
+
+
+```{r }
+
+# comando para colocar o arquivo em uso  
+
+attach(salarios)
+
+# Verificando os nomes das variaveis
+names(salarios)
+
+```
+
+####  Verificando os formatos/tipos de variaveis 
+
+
+```{r }
+#Verificando os formatos das variaveis
+str(salarios)
+
+```
+
+####  Estatisticas descritivas - Medidas resumo
+ 
+```{r }
+
+# do arquivo inteiro 
+summary(salarios)
+
+# ou de uma variavel especifica
+
+summary(salarios$salario)
+
+
+```
+
+####  Avaliar graficamente
+Histograma
+
+
+```{r }
+
+#### graficos variaveis quantitativas:
+
+#### histograma
+hist(salarios$salario )
+
+
+```
+
+####  Boxplot
+ 
+
+```{r }
+
+#### boxplot
+boxplot(salarios$salario )
+
+
+```
+
+
+
+
+```{r }
+
+#comando para dividir a area de Plots em 1 linha e duas colunas para os graficos
+
+par (mfrow=c(1,2))
+hist(salarios$salario )
+boxplot(salarios$salario )
+par (mfrow=c(1,1))
+
+
+```
+
+
+
+
+```{r }
+#comando para gerar em 3 linhas e 3 colunas de graficos
+par (mfrow=c(3,3))
+hist(salarios$idade)
+hist(salarios$tempocasa)
+hist(salarios$escolar)
+hist(salarios$qproj_estra)
+hist(salarios$proj_sustent)
+hist(salarios$proj_6sigma)
+hist(salarios$proj_social)
+hist(salarios$notaavalia)
+
+par (mfrow=c(1,1))
+
+
+```
+
+
+#### Observam os histogramas acima 
+as variaveis: proj_6sigma, proj_social e  proj_sustent sao variaveis qualitativas, entretanto elas
+foram transformadas em variaveis numericas (chamadas dummy, isto eh: 1=participa  0=nao participa)
+transformar variaveis categoricas em numericas eh uma pratica muito utilizada 
+algumas vezes devido a limitacao/necessidade da tecnica
+
+```{r }}
+
+#### Boxplot das variaveis quantitativas numericas
+par (mfrow=c(2,2))
+boxplot(salarios$idade , main="idade")
+boxplot(salarios$tempocasa  , main="tempo de casa")
+boxplot(salarios$escolar , main="escolar")
+boxplot(salarios$notaavalia , main="notaavalia")
+par (mfrow=c(1,1))
+
+
+
+```
+
+#### A variavel de interesse, que estamos avaliando (ou supervisionando) eh a variavel salario 
+todas os graficos fazem sentido serem feitos com a variavel dependente presente (Y)
+Quando as variaveis independentes sao quantitativas os graficos de dispersao sao os mais adequados  
+
+```{r }
+
+#### Grafico de dispersao para a associacaoo entre idade  e Salario 
+plot (x = salarios$idade, y = salarios$salario,
+      main = "Grafico de dispersao",
+      xlab = "Idade (anos)",
+      ylab = "Salario (R$)")
+
+
+
+```
+
+
+```{r }
+#### Grafico de dispersao para a associacao entre tempo de casa e Salario 
+plot (x = salarios$tempocasa, y = salarios$salario,
+      main = "Grafico de dispersao: Ttempo de casa x salario",
+      xlab = "tempo de casa",
+      ylab = "Salario (R$) ")
+
+
+#Grafico de dispersao para a associacao entre notaavalia e Salario 
+plot (x = salarios$notaavalia, y = salarios$salario ,
+      main = "Grafico de dispersao: Nota de Avaliacao x salario",
+      xlab = "Score de Avaliacao",
+      ylab = "Salario(R$) ")
+
+#### Grafico de dispersao para a associacao entre escolaridade(anos) e Salario 
+plot (x = salarios$escolar, y = salarios$salario ,
+      main = "Grafico de dispersao: escolaridade(anos) x salario",
+      xlab = "Anos de estudos",
+      ylab = "Salario(R$) ")
+
+
+
+```
+
+#### Quando as variaveis independentes sao qualitativas o grafico do tipo Boxplot pode ser interessante (sempre com a variavel numerica-a que esta sendo supervisionada)
+
+```{r }
+boxplot(salarios$salario ~salarios$proj_sustent, main='proj_sustent',col=c('red','darkgreen'))
+
+boxplot(salarios$salario ~salarios$proj_6sigma, main='proj_6sigma',col=c('red','darkgreen'))
+
+boxplot(salarios$salario ~salarios$proj_social, main='proj_social',col=c('red','darkgreen'))
+
+```
+
+####  Matriz de Correlacaoo 
+Correlacaoo indica a forma e a direcao do relacionamento linear entre duas variaveis aleatorias. No uso estatistico geral, correlacaoo se refere a medida da relacao entre duas variaveis:  
+
+
+```{r }
+
+#### matriz de correlacoes
+matcor <- cor(salarios)
+print(matcor, digits = 2)
+
+```
+
+####visualizar correlacao e os graficos
+
+
+```{r }
+
+
+panel.cor <- function(x, y, digits=2, prefix ="", cex.cor,
+                      ...)  {
+  usr <- par("usr")
+  on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- cor(x, y , use = "pairwise.complete.obs")
+  txt <- format(c(r, 0.123456789), digits = digits) [1]
+  txt <- paste(prefix, txt, sep = "")
+  if (missing(cex.cor))
+    cex <- 0.8/strwidth(txt)
+  # abs(r) eh para que na saida as correlacoes ficarem proporcionais
+  text(0.5, 0.5, txt, cex = cex * abs(r))
+}
+#pdf(file = "grafico.pdf")
+pairs(salarios, lower.panel=panel.smooth, upper.panel=panel.cor)
+
+
+```
+
+
+#### Algoritmo: Quais as variaveis que estimam o valor de salario para esta base de dados
+     **usando todas as variaveis plausiveis**
+     
+     
+```{r }
+
+
+modelo_01 <- lm(salario  ~ idade+tempocasa+escolar+qproj_estra+proj_sustent+
+                           proj_6sigma+proj_social+notaavalia, data=salarios)
+
+
+```
+
+
+#### Saida do Modelo com as variaveis indicadas
+
+
+```{r }
+summary(modelo_01)
+
+```
+
+#### Analisando a saida acima:
+  Como nossos parametros sao estimativas pontuais, eh interessante testar a sua 
+  significancia, ou seja, com que nivel de confianca eu consigo afirmar que este efeito
+  estimado eh diferente de zero.
+  
+  O comando summary() podera indicar se os seus parametros estimados sao significativos ou   nao, ou seja, se eh possivel assumir que sao diferentes de zero.
+  Essa funcao tambem retorna a medida R2(adjusted R-squared),
+  que indica o quanto da variacao presente nos dados esta sendo explicada pela covariavel.
+
+     
+
+#### Podemos observar neste output do comando summary()
+  as estimativas dos parametros, o erro padrao associado a cada estimativa,
+  uma estatistica t e um p-valor associado, resultado do teste t utilizado para saber se
+  as estimativas sao realmente diferentes de zero.
+  Quanto mais asteriscos presentes ao lado do efeito estimado, 
+  maior o nivel de confianca com que podemos afirmar que o efeito 
+  nao eh nulo.
+
+
+#### utilizando um metodo automatico de seletivo de variaveis 
+
+```{r }
+stepwise<-step(modelo_01,direction="both")
+ 
+summary(stepwise)
+
+
+```
+
+#### Modelo final - com as variaveis significativas.
+
+```{r }
+modelo_final <- lm(salario  ~ idade+escolar+tempocasa+qproj_estra+proj_6sigma+proj_social, data=salarios)
+summary(modelo_final)
+
+```
+
+ 
+#### Pontuando a base toda com a funcao que foi gerado pelo modelo_final
+a funcao **predict** eh utilizada para aplicar o modelo em uma base de dados 
+
+
+```{r }
+salarios$sal_estimado_regr <- predict(modelo_final,salarios) 
+
+summary(salarios$sal_estimado_regr)
+
+# Dar um view no arquivo para ver o conteudo
+
+```
+
+
+#### Grafico de dispersao entre valor de salario Observado e valor de salario estimado pela regressao
+
+```{r }
+
+plot (x = salarios$salario , y = salarios$sal_estimado_regr ,
+      main = "Grafico de dispersao: salario real x salario estimado",
+      xlab = " Salario  ",
+      ylab = " sal_estimado_regr  ")
+
+```
+
+#### avaliar o modelo 
+     erro quadratico medio utilizando  a estimativa com o algoritmo  regressao linear
+     O **MSE: erro quadratico medio** eh definido como sendo a media da diferenca entre o valor obsevado e o valor estimado ao quadrado
+
+```{r }
+
+mse_modelo_regr <- mean((salarios$salario  - salarios$sal_estimado_regr)^2)
+sqrt(mse_modelo_regr)
+
+```
+
+#### erro quadratico medio utilizando o salario medio da base 
+
+```{r }
+mse_usando_media <- mean((salarios$salario  - mean(salarios$salario ))^2)
+sqrt(mse_usando_media)
+```
+
+#### grafico dos residuos (valor observado menos o valor estimado pelo modelo)
+```{r }
+rs <- resid(modelo_final)
+plot(predict(modelo_final), rs, xlab = "Preditor linear",ylab = "Residuos")
+abline(h = 0, lty = 2)
+```
+
+
+#### Qualidade do ajuste
+  Eh possivel avaliar se as suposicoes acima estao sendo cumpridas
+  atraves da Analise de Residuos , 
+  que pode ser feita graficamente atraves dos comandos:
+  
+```{r }
+par(mfrow =c(2,2))
+plot(modelo_final , which=c(1:4), pch=20)
+
+```
+
+#### Primeiro grafico: Residuos em funcao dos valores estimados
+  Podemos utilizar o grafico para observar a independencia e a 
+  homocedasticidade (eh o termo para designar variancia constante dos erros)
+
+#### Segundo grafico: Avaliar a Normalidade dos Residuos 
+  a linha diagonal pontilhada representa a distribuicao normal teorica 
+  e os pontos a distribuicao dos residuos observada
+
+#### Terceiro grafico: Pode observar a mesma que o primeiro, isto eh, 
+  aleatoriedade e amplitude, desta vez com os residuos padronizados
+
+#### Quarto Grafico: Distancias de Cook das observacoes,
+  uma medida de influencia que pode indicar a presencaa de outliers
+  quando valor maior do que 1.
+
+
+#### E, quando os graficos apresentam duvidas? Fazer testes estatisticos
+
+ Teste de Normalidade de Shapiro Wilk
+
+#### O Teste de Shapiro-Wilk para normalidade 
+  avalia a aderencia dos residuos a distribuicao Normal.
+  O p-valor se refere a hipotese de que os residuos seguem 
+  de fato uma distribuicaoo Normal, e essa hipotese eh rejeitada, 
+  de modo geral, quando p eh menor que 0.05.
+
+  
+```{r }
+shapiro.test(residuals(modelo_final))
+
+```
