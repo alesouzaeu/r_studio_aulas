@@ -1,0 +1,258 @@
+---
+title: "TecnicasNaoSupervisionadas"
+author: "AdelaideAlves"
+date: "1 de outubro de 2020"
+output: html_document
+---
+  
+##  R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+## Objetivo 
+
+  Para esse caso vamos aplicar as ferramentas: **Cluster Analysis**
+  que sao **tecnicas NAo Supervisionadas de Agrupamento**
+  O passo inicial eh a partir do objetivo selecionar as variaveis segmentadoras.
+
+
+#### Ler arquivo xls.
+
+    install.packages("readxl")
+
+
+####ler o arquivo com RStudio instalado na maquina
+ indicadores <- read_excel("C:/caminho_com_barra_invertida/Indicadores_2020.xlsx")
+
+####ler o arquivo com RStudiocloud
+ indicadores <- read_excel("Indicadores_2020.xlsx")
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readxl)
+indicadores <- read_excel("Indicadores_2020.xlsx")
+
+```
+
+```{r UsandoArquivo, message=FALSE}
+attach(indicadores)
+
+# View(indicadores) ou clique encima do arquivo
+
+```
+
+####mostrar os nomes e formatos das variaveis
+```{r }
+names(indicadores)
+
+str(indicadores)
+```
+ 
+
+####Estatisticas descritivas
+```{r }
+summary(indicadores)
+```
+
+#### comando para gerar em 2 linhas e 2 colunas os histogramas
+```{r , message=FALSE}
+
+attach(indicadores)
+par (mfrow=c(2,2))
+hist(Potencial)
+hist(Desempenho)
+hist(satisfaction_level )
+hist(last_evaluation)
+par (mfrow=c(1,1))
+
+```
+#### comando para gerar em 2 linhas e 2 colunas - boxplot
+```{r }
+
+par (mfrow=c(2,2))
+boxplot(Potencial, main="Potencial" )
+boxplot(Desempenho , main="Desempenho")
+boxplot(satisfaction_level , main="satisfaction_level")
+boxplot(last_evaluation, main="last_evaluation")
+par (mfrow=c(1,1))
+
+```
+#### comando para gerar em 3 linhas e 2 colunas com plot de dispersao bivariada
+```{r }
+
+par (mfrow=c(3,2))
+plot(Desempenho, Potencial)
+plot(Desempenho, satisfaction_level )
+plot(Desempenho, last_evaluation)
+ 
+
+plot(Potencial, satisfaction_level )
+plot(Potencial, last_evaluation)
+
+plot(satisfaction_level, last_evaluation)
+
+par (mfrow=c(1,1))
+
+```
+
+#### Excluir outliers
+```{r }
+
+ind_semout <- subset(indicadores, Potencial >5 & last_evaluation < 100)
+
+
+```
+
+#### Usando Base de analise removidos os outliers
+```{r , message=FALSE}
+
+attach(ind_semout)
+
+  
+```
+
+#### comando para gerar em 2 linhas e 2 colunas - boxplot sem outliers
+
+```{r }
+
+par (mfrow=c(2,2))
+boxplot(Potencial, main="Potencial" )
+boxplot(Desempenho , main="Desempenho")
+boxplot(satisfaction_level , main="satisfaction_level")
+boxplot(last_evaluation, main="last_evaluation")
+par (mfrow=c(1,1))
+
+```
+#### Seleciona Base de analise
+```{r }
+ 
+seleciona_ind<- subset(ind_semout,select=c(Potencial,Desempenho,satisfaction_level, last_evaluation))
+
+```
+
+#### matriz de correlacoes
+     Eh importante ter feito a analise de outliers anteriormente 
+     
+```{r }
+
+matcor <- cor(seleciona_ind)
+print(matcor, digits = 2)
+```
+
+
+```{r }
+
+panel.cor <- function(x, y, digits=2, prefix ="", cex.cor,
+                      ...)  {
+  usr <- par("usr")
+  on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- cor(x, y , use = "pairwise.complete.obs")
+  txt <- format(c(r, 0.123456789), digits = digits) [1]
+  txt <- paste(prefix, txt, sep = "")
+  if (missing(cex.cor))
+    cex <- 0.8/strwidth(txt)
+  # abs(r) eh para que na saida as correlacoes ficaremm proporcionais
+  text(0.5, 0.5, txt, cex = cex * abs(r))
+}
+#pdf(file = "grafico.pdf")
+
+pairs(seleciona_ind, lower.panel=panel.smooth, upper.panel=panel.cor)
+
+par (mfrow=c(1,1))
+
+```
+
+
+#### inicio da mineracao: Objetivo eh segmentar os colaboradores em grupos homogeneos
+     depois de termos selecionado as variaveis segmentadores o proximo passo eh
+     padronizar as variaveis antes de clusterizar devido ao uso de calculo de distancias, 
+     Eh importante ter feito a analise de outliers anteriormente 
+
+```{r , message=FALSE , warning=FALSE}
+
+# padronizacao da base (funcao scale)
+
+dados_padronizados = as.data.frame(scale(seleciona_ind))
+
+summary(dados_padronizados)
+
+attach(dados_padronizados)
+
+```
+
+#### Determine number of clusters
+Dizer quantos clusters queremos encontrar eh um desafio. Para resolver essa questao existe um metodo conhecido como Metodo Cotovelo (do ingles Elbow Method).
+O Metodo do Cotovelo (Elbow Method): a ideia eh rodar o KMeans para varias quantidades diferentes de clusters (simulando) e escolher qual dessas quantidades eh o numero otimo de clusters. O que geralmente acontece ao aumentar a quantidade de clusters no KMeans  as diferencas entre clusters se tornam muito pequenas, e as diferencas das observacoes intra-clusters vao aumentando. Entao en preciso achar um equilibrio em que as observacoes que formam cada agrupamento sejam o mais homogeneas possivel e que os agrupamentos formados sejam os mais diferentes um dos outros
+
+
+```{r }
+set.seed(1234)
+wss <- (nrow(dados_padronizados)-1)*sum(apply(dados_padronizados,2,var))
+for (i in 2:20) wss[i] <- sum(kmeans(dados_padronizados,iter=100,
+                                     centers=i)$withinss)
+plot(1:20, wss, type="b", xlab="Number of Clusters",
+     ylab="Within groups sum of squares") 
+
+
+```
+
+#### Criando os 4 clusters a apartir da tecnica KMeans
+
+```{r }
+set.seed(1234)
+output_cluster<-kmeans(dados_padronizados,4,iter=100)
+
+```
+
+#### Qual a quantidade de elementos em cada cluster 
+```{r }
+ 
+# colocando o cluster de cada elemnto em uma variavel
+clus_indicadores<-output_cluster$cluster
+
+# Mostrando a quantidade absoluta
+table (clus_indicadores)
+
+# Mostrando em percentual
+print(prop.table(table (clus_indicadores))*100, digits=3)
+
+
+```
+
+#### quais as caracteristicas de cada clusters - O centroide indica o perfil de cada cluster 
+
+```{r }
+ 
+# alocando os centroides 
+
+centros<-output_cluster$centers
+centros
+```
+
+#### Mostrando Resultados: centroide padronizado
+
+```{r }
+aggregate(dados_padronizados,by=list(clus_indicadores),FUN=mean)
+
+```
+
+#### Mostrando Resultados: centroide variaveis segmentadoras original
+```{r }
+aggregate(seleciona_ind,by=list(clus_indicadores),FUN=mean)
+```
+
+
+```{r }
+
+
+matriz_fim<-cbind(seleciona_ind,dados_padronizados,clus_indicadores)
+
+
+# View(matriz_fim)
+
+```
