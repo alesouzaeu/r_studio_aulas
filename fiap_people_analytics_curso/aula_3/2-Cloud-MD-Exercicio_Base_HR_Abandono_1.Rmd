@@ -1,0 +1,350 @@
+---
+title: "Avaliando o perfil de Colaboradores que desligaram da empresa"
+author: "AdelaideAlves"
+date: "1 de outubro de 2020"
+output: html_document
+---
+
+install.packages("rpart") 
+install.packages("rpart.plot") 
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+## Objetivo 
+
+  O  foco  do  trabalho identificar a  possibilidade  de  previsao  de um funcionario pedir o
+  desligamento da empresa  
+  Esta  base foi  obtida  no site do **Kaggle**
+
+  Para esse caso vamos aplicar as ferramentas: **Arvore de Decisao e Regressao Logistica**
+  que sao **tecnicas supervisionadas de classificao**
+  em que a variavel de interesse eh categorias/grupos em  uma  base  de  dados  real.
+  
+  
+### Primeiro Passo  
+  
+   Trazer o arquivo que contem a base que serah analizada para o **ambiente do R**
+   
+   Qual eh a extensao do arquivo de leitura: .csv .excel .sav etc...
+
+   alterar o caminho - Trabalhando com o RStudio Instalado
+   lembre da barra invertida /.
+
+   Exemplo 1: trabalhando no seu computador 
+   Abandono <- read.csv("C:/caminho/HR_Abandono_2020.csv", sep=';',dec=',' , row.names=1)
+
+   Exemplo 2: trabalhando RStudiocloud:
+   Abandono <- read.csv("HR_Abandono_2020.csv", sep=';',dec=',' , row.names=1)
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+# install.packages("rpart") 
+# install.packages("rpart.plot") 
+library(rpart) 
+library(rpart.plot) 
+
+
+## Leitura da base de dados 
+# Ler arquivo csv
+Abandono <- read.csv("HR_Abandono_2020.csv", sep=';',dec=',' , row.names=1, stringsAsFactors=TRUE, encoding="UTF8")
+
+```
+
+
+#### Estamos com o arquivo na estrutura do R 
+
+
+  visualizacao da base
+
+```{r visualizando , include=FALSE}
+# View(Abandono)
+```
+
+
+#### indicando o arquivo que serah utilizado
+
+```{r , include=FALSE}
+attach(Abandono)
+
+```
+
+
+#### mostrar as variaveis e seus respctivos formatos
+
+```{r formtos }
+
+str(Abandono)
+
+```
+
+
+#### verifica variavel com observacao missing
+
+
+```{r verifica}
+
+sapply(Abandono, function(x)all(is.na(x)))
+
+
+```
+
+
+#### descritivo das variaveis
+
+```{r summary}
+summary(Abandono)
+```
+
+
+
+#### esta tecnica eh para quando a variavel de interesse eh categorica
+    pode-se notar que ela a variavel dependente eh numerica
+    transformando a variavel "left" em categorica
+
+
+```{r transforma}
+Abandono$left<- as.factor(Abandono$left)
+
+# verificando se a variavel mudou o formato para categorica(factor)
+
+str(Abandono$left)
+
+```
+
+
+
+#### Frequencia absoluta 
+
+
+```{r table}
+
+  table(left)
+  
+```
+
+
+#### Frequencia relativa 
+    como se trata de um estudo que trabalhamos com amostras e
+    sobretudo neste caso, onde o objetivo eh estimar( classificar) 
+    a pessoa em Left(1) ou Nao Left (0) uma boa opcaoo eh avaliar as tabelas 
+    pelo percentual coluna, 
+  
+
+```{r frequencia}
+  prop.table(table(left))
+  
+```  
+  
+#### Como se trata de uma analise supervisionada (variavel Left eh a variavel de interesse)
+    a analise descritiva pode ser avaliar as variaveis independentes (variaveis candidatas a explicar     a variavel de interesse)
+    Frequencia relativa - Percentual coluna 
+
+
+```{r PercentualColuna}
+  prop.table(table(num_project,left),2)
+
+# 
+  print(prop.table(table(num_project,left),2)*100, digits=2)
+  
+  
+```  
+
+ 
+#### Frequencia relativa - Percentual coluna Outras variaveis
+
+```{r Outras_variaveis}
+
+  print(prop.table(table(time_spend_company,left),2)*100, digits=2)
+  
+  print(prop.table(table(salary,left),2)*100, digits=2) 
+  
+  
+```  
+
+
+
+```{r ParteGraficas1 }
+str(Abandono)
+
+attach(Abandono)
+#comando para alocar a area do PLots em 3 linhas e 2 colunas 
+
+# histograma - variaveis quantitativas
+
+par (mfrow=c(3,2))
+hist(satisfaction_level)
+hist(last_evaluation)
+hist(num_project)
+hist(average_montly_hours)
+hist(time_spend_company)
+par (mfrow=c(1,1))
+
+
+``` 
+
+#### graficamente para avaliar as variaveis quantitativas em funcao da variavel de interesse
+
+```{r ParteGraficas2}
+
+par (mfrow=c(2,2))
+boxplot(Abandono$satisfaction_level~Abandono$left,main='satisfaction_level',col=c('darkgreen','red'))
+boxplot(Abandono$last_evaluation ~ Abandono$left, main='last_evaluation',col=c('darkgreen','red'))
+boxplot(average_montly_hours ~ Abandono$left, main='average_montly_hours',col=c('darkgreen','red'))
+boxplot(time_spend_company ~ Abandono$left, main='time_spend_company ',col=c('darkgreen','red'))
+
+par (mfrow=c(1,1))
+
+
+``` 
+
+#### graficamente para avaliar as variveis qualitativas  em funcao da# variavel de interesse
+
+```{r ParteGraficas3}
+
+par (mfrow=c(3,2))
+plot(salary, left,ylab="left",xlab="salary",col=c('red', 'darkgreen'))
+plot(as.factor(num_project), left,ylab="left",xlab="number_project",col=c('red', 'darkgreen'))
+plot(as.factor(Work_accident), left,ylab="left",xlab="work_accident",col=c('red', 'darkgreen'))
+plot(depto, left,ylab="left",xlab="sales",col=c('red', 'darkgreen'))
+plot(as.factor(promotion_last_5years), left,ylab="left",xlab="promotion_last_5years",col=c('red', 'darkgreen'))
+plot(as.factor(time_spend_company), left,ylab="left",xlab="time_spend_company",col=c('red', 'darkgreen'))
+par (mfrow=c(1,1))
+
+
+``` 
+
+#### alguns algoritmos nao trabalham bem com a variavel qualitativa ou com muitas categorias. 
+     Uma opcao eh criar variaveis "dummys"
+
+
+```{r ParteGraficas4}
+
+plot(depto, left,ylab="left",xlab="depto",col=c('red', 'darkgreen'))
+
+``` 
+
+```{r ParteGraficas5 , message=FALSE}
+
+# Criando a variavel dummy  0 = Nao, 1 = Sim
+Abandono$depto_1 <- ifelse(Abandono$depto=="accounting" | Abandono$depto=="Abandono" | Abandono$depto=="technical	","1","0")
+Abandono$depto_2 <- ifelse(Abandono$depto=="management" | Abandono$depto=="RandD" ,"1","0")
+
+
+attach(Abandono)
+
+
+``` 
+
+
+```{r ParteGraficas6}
+
+summary(Abandono)
+
+
+plot(as.factor(depto_1), left,ylab="left",xlab="depto_1",col=c('red', 'darkgreen'))
+plot(as.factor(depto_2), left,ylab="left",xlab="depto_2",col=c('red', 'darkgreen'))
+
+
+ 
+```  
+
+ 
+ 
+ 
+```{r  amostras , message=FALSE}
+
+
+attach(Abandono)
+# Dividir  em duas amostra Treino e Teste, sendo treino 70% da base e teste 30% 
+set.seed(1234)
+ind <- sample(2,nrow(Abandono), replace=TRUE, prob=c(0.7,0.3))
+
+table(ind)
+
+trainData <- Abandono[ind==1, ]
+testData  <- Abandono[ind==2, ]
+
+
+```
+
+
+```{r  aplica}
+summary(trainData)
+
+```
+
+####  Carrega o pacote: Arvore de decisao
+
+
+   informacoes dos Parametros do Modelo
+   Usa rpart para decision tree
+
+   rpart eh o algoritmo que usaremos para Arvore de Decisao
+
+
+```{r  modeloarvore}
+
+library(rpart) 
+library(rpart.plot) 
+
+modelo_tree <- rpart (left ~ depto_1 + depto_2 + time_spend_company + 
+                             num_project  + satisfaction_level + 
+                             Work_accident+promotion_last_5years+salary, 
+                             data=trainData, cp = 0.03,minsplit = 50 ,maxdepth=10)
+
+
+```
+
+
+#### Faz o Grafico, isto eh a Arvore
+
+```{r  verarvore , message=FALSE, warning=FALSE}
+rpart.plot(modelo_tree, type=4, extra=104, under=FALSE, clip.right.labs=TRUE,
+           fallen.leaves=FALSE,   digits=2, varlen=-10, faclen=20,
+           cex=0.4, tweak=1.7,
+           compress=TRUE,
+           snip=FALSE)
+
+
+
+```
+
+ 
+
+#### a funcao predict serve para aplicar o modelo 
+    (neste caso regras da arvore de decisao na base de dados)
+
+
+
+```{r  acerto}
+
+
+
+previsto.tree<-predict(modelo_tree,testData,type='class')
+
+```
+
+
+#### avaliacao do modelo: comparar o observado versus o estimado:
+     compara o observado: 0-nao saiu 1-saiu  com a variavel estimado pelo modelo
+     modelo a partir de uma regra 
+
+
+```{r  MatrizConfusao}
+
+
+matriz_de_confusao<-table(testData$left, previsto.tree)
+matriz_de_confusao
+
+perc_acerto_tree <- sum(diag(matriz_de_confusao))/sum(matriz_de_confusao)*100
+perc_acerto_tree
+
+
+```
+
